@@ -1,1 +1,55 @@
+name: Get data through CDN (Image Dataset)
+description: Downloads a ZIP dataset from a CDN URL, extracts it, and outputs the parent directory.
+inputs:
+  - name: process_data_url
+    type: String
+    description: URL to fetch the ZIP dataset from.
+outputs:
+  - name: dataset_dir
+    type: Data
+    description: "Parent directory containing extracted dataset."
+implementation:
+  container:
+    image: nikhilv215/nesy-factory:v22
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        exec "$0" "$@"
+      - python3
+      - -u
+      - -c
+      - |
+        import argparse
+        import os
+        import requests
+        import zipfile
+        import io
 
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--process_data_url', type=str, required=True)
+        parser.add_argument('--dataset_dir', type=str, required=True)
+        args = parser.parse_args()
+
+        url = args.process_data_url
+        out_dir = args.dataset_dir
+
+        print(f"Downloading dataset from: {url}")
+        os.makedirs(out_dir, exist_ok=True)
+
+        # Download ZIP as binary
+        resp = requests.get(url, stream=True)
+        resp.raise_for_status()
+
+        # Extract ZIP into output directory
+        with zipfile.ZipFile(io.BytesIO(resp.content)) as z:
+            z.extractall(out_dir)
+
+        print(f"Dataset extracted at: {out_dir}")
+        print(f"Top-level contents: {os.listdir(out_dir)}")
+    args:
+      - --process_data_url
+      - {inputValue: process_data_url}
+      - --dataset_dir
+      - {outputPath: dataset_dir}
