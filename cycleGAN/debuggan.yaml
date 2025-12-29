@@ -1,0 +1,59 @@
+name: Print Dataset Directory Summary
+description: Prints directory structure and total file count (without listing files).
+inputs:
+  - name: dataset_dir
+    type: Data
+    description: Parent directory containing the extracted dataset.
+implementation:
+  container:
+    image: nikhilv215/nesy-factory:v22
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        exec "$0" "$@"
+      - python3
+      - -u
+      - -c
+      - |
+        import argparse
+        import os
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--dataset_dir', type=str, required=True)
+        args = parser.parse_args()
+
+        root_dir = args.dataset_dir
+
+        print("=" * 60)
+        print(f"Inspecting dataset directory: {root_dir}")
+        print("=" * 60)
+
+        if not os.path.exists(root_dir):
+            raise RuntimeError(f"Dataset directory does not exist: {root_dir}")
+
+        total_files = 0
+        total_dirs = 0
+
+        for current_root, dirs, files in os.walk(root_dir):
+            level = current_root.replace(root_dir, "").count(os.sep)
+            indent = "  " * level
+
+            # Print directory name only
+            print(f"{indent}{os.path.basename(current_root)}/")
+            total_dirs += 1
+
+            # Count files but do not print file names
+            total_files += len(files)
+
+        if total_files == 0:
+            raise RuntimeError("No files found in dataset directory.")
+
+        print("-" * 60)
+        print(f"Total directories: {total_dirs}")
+        print(f"Total files: {total_files}")
+        print("=" * 60)
+    args:
+      - --dataset_dir
+      - {inputPath: dataset_dir}
