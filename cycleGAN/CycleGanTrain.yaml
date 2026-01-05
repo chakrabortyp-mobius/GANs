@@ -1,0 +1,129 @@
+name: Train CycleGAN
+description: Trains a CycleGAN model with optional resume from previous checkpoints.
+inputs:
+  - name: dataset_dir
+    type: Data
+    description: Parent directory containing the extracted horse2zebra dataset.
+  - name: checkpoint_dir
+    type: Data
+    description: Directory with checkpoints (.tar files) for resume training. Leave disconnected or connect to previous training output for resume.
+    optional: true
+  - name: max_batches
+    type: Integer
+    description: Maximum number of batches to train per epoch. Use -1 for full dataset.
+    default: -1
+  - name: epochs
+    type: Integer
+    description: Number of training epochs.
+    default: 1
+  - name: batch_size
+    type: Integer
+    description: Batch size for training.
+    default: 1
+  - name: lr
+    type: Float
+    description: Learning rate for optimizers.
+    default: 0.0001
+outputs:
+  - name: output_dir
+    type: Data
+    description: Directory containing trained model checkpoints (G_H, G_Z, D_H, D_Z).
+implementation:
+  container:
+    image: adityamanjunath/nesyfactory:v9
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        exec "$0" "$@"
+      - python3
+      - -u
+      - -c
+      - |
+        import argparse
+        import os
+        import importlib
+        
+        # Import training function
+        train_module = importlib.import_module("nesy_factory.GANs.cycleGAN.train")
+        train_cyclegan = train_module.train_cyclegan
+        
+        parser = argparse.ArgumentParser(description="CycleGAN Trainer")
+        parser.add_argument('--dataset_dir', type=str, required=True)
+        parser.add_argument('--checkpoint_dir', type=str, default="")
+        parser.add_argument('--max_batches', type=int, default=-1)
+        parser.add_argument('--output_dir', type=str, required=True)
+        parser.add_argument('--epochs', type=int, default=1)
+        parser.add_argument('--batch_size', type=int, default=1)
+        parser.add_argument('--lr', type=float, default=0.0001)
+        
+        args = parser.parse_args()
+        
+        print("🚀 Running CycleGAN training")
+        print(f"Dataset directory: {args.dataset_dir}")
+        print(f"Checkpoint directory (raw): '{args.checkpoint_dir}'")
+        print(f"Max batches: {args.max_batches}")
+        print(f"Output directory: {args.output_dir}")
+        print(f"Epochs: {args.epochs}")
+        print(f"Batch size: {args.batch_size}")
+        print(f"Learning rate: {args.lr}")
+        
+        # Ensure output directory exists
+        os.makedirs(args.output_dir, exist_ok=True)
+        
+        # Process checkpoint_dir: empty string or whitespace → None
+        checkpoint_dir_processed = args.checkpoint_dir.strip() if args.checkpoint_dir else ""
+        input_checkpoint_dir = None if not checkpoint_dir_processed else checkpoint_dir_processed
+        
+        # Process max_batches: -1 → None
+        max_batches_value = None if args.max_batches == -1 else args.max_batches
+        
+        print(f"\n📋 Processed parameters:")
+        print(f"  checkpoint_dir (processed): {input_checkpoint_dir}")
+        print(f"  max_batches (processed): {max_batches_value}")
+        
+        # Validate checkpoint directory if provided
+        if input_checkpoint_dir:
+            if not os.path.isdir(input_checkpoint_dir):
+                raise ValueError(f"Checkpoint directory does not exist: {input_checkpoint_dir}")
+            
+            # Check for required checkpoint files
+            required_files = ["G_H.pth.tar", "G_Z.pth.tar", "D_H.pth.tar", "D_Z.pth.tar"]
+            missing_files = [f for f in required_files if not os.path.exists(os.path.join(input_checkpoint_dir, f))]
+            
+            if missing_files:
+                print(f"⚠️ Warning: Missing checkpoint files: {missing_files}")
+                print(f"Available files: {os.listdir(input_checkpoint_dir)}")
+            else:
+                print(f"✅ All checkpoint files found in: {input_checkpoint_dir}")
+        
+        # Run training
+        train_cyclegan(
+            dataset_dir=args.dataset_dir,
+            output_dir=args.output_dir,
+            input_dir=input_checkpoint_dir,
+            max_batches=max_batches_value,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            lr=args.lr,
+        )
+        
+        print("\n✅ Training completed successfully")
+        print(f"Checkpoints saved in: {args.output_dir}")
+        print(f"Output contains: {os.listdir(args.output_dir)}")
+    args:
+      - --dataset_dir
+      - {inputPath: dataset_dir}
+      - --checkpoint_dir
+      - {inputPath: checkpoint_dir}
+      - --max_batches
+      - {inputValue: max_batches}
+      - --output_dir
+      - {outputPath: output_dir}
+      - --epochs
+      - {inputValue: epochs}
+      - --batch_size
+      - {inputValue: batch_size}
+      - --lr
+      - {inputValue: lr}
