@@ -1,9 +1,7 @@
 name: Train CycleGAN
 description: Trains a CycleGAN model with optional resume from previous checkpoints.
 inputs:
-  - name: dataset_dir
-    type: Data
-    description: Parent directory containing the extracted horse2zebra dataset.
+
 
 implementation:
   container:
@@ -20,5 +18,4 @@ implementation:
       - |
         
     args:
-      - --dataset_dir
-      - {inputPath: dataset_dir}
+
