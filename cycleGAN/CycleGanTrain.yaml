@@ -44,6 +44,13 @@ implementation:
         import urllib.request
         import zipfile
         import shutil
+        import subprocess
+        import sys
+        
+        subprocess.check_call([
+            sys.executable, "-m", "pip", "install",
+            "albumentations", "torchvision"
+        ])
 
         train_module = importlib.import_module("nesy_factory.GANs.cycleGAN.train")
         train_cyclegan = train_module.train_cyclegan
