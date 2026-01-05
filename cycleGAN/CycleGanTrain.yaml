@@ -1,21 +1,13 @@
 name: Train CycleGAN
 description: Trains a CycleGAN model with optional resume from previous checkpoints.
-inputs:
+
 
 
 implementation:
   container:
     image: adityamanjunath/nesyfactory:v9
     command:
-      - sh
-      - -c
-      - |
-        set -e
-        exec "$0" "$@"
-      - python3
-      - -u
-      - -c
-      - |
+
         
     args:
 
