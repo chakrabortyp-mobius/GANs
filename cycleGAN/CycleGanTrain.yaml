@@ -60,23 +60,16 @@ implementation:
         
         args = parser.parse_args()
         
-        print("Running CycleGAN training")
-        print(f"Dataset directory: {args.dataset_dir}")
-        print(f"Checkpoint directory (raw): '{args.checkpoint_dir}'")
-        print(f"Max batches: {args.max_batches}")
-        print(f"Output directory: {args.output_dir}")
-        print(f"Epochs: {args.epochs}")
-        print(f"Batch size: {args.batch_size}")
-        print(f"Learning rate: {args.lr}")
+
         
         # Ensure output directory exists
         os.makedirs(args.output_dir, exist_ok=True)
         
-        # Process checkpoint_dir: empty string or whitespace → None
+
         checkpoint_dir_processed = args.checkpoint_dir.strip() if args.checkpoint_dir else ""
         input_checkpoint_dir = None if not checkpoint_dir_processed else checkpoint_dir_processed
         
-        # Process max_batches: -1 → None
+
         max_batches_value = None if args.max_batches == -1 else args.max_batches
         
         print(f"\\n Processed parameters:")
