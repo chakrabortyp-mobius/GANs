@@ -60,7 +60,7 @@ implementation:
         
         args = parser.parse_args()
         
-        print("🚀 Running CycleGAN training")
+        print("Running CycleGAN training")
         print(f"Dataset directory: {args.dataset_dir}")
         print(f"Checkpoint directory (raw): '{args.checkpoint_dir}'")
         print(f"Max batches: {args.max_batches}")
@@ -79,7 +79,7 @@ implementation:
         # Process max_batches: -1 → None
         max_batches_value = None if args.max_batches == -1 else args.max_batches
         
-        print(f"\n📋 Processed parameters:")
+        print(f"\\n Processed parameters:")
         print(f"  checkpoint_dir (processed): {input_checkpoint_dir}")
         print(f"  max_batches (processed): {max_batches_value}")
         
@@ -93,10 +93,10 @@ implementation:
             missing_files = [f for f in required_files if not os.path.exists(os.path.join(input_checkpoint_dir, f))]
             
             if missing_files:
-                print(f"⚠️ Warning: Missing checkpoint files: {missing_files}")
+                print(f"Warning: Missing checkpoint files: {missing_files}")
                 print(f"Available files: {os.listdir(input_checkpoint_dir)}")
             else:
-                print(f"✅ All checkpoint files found in: {input_checkpoint_dir}")
+                print(f" All checkpoint files found in: {input_checkpoint_dir}")
         
         # Run training
         train_cyclegan(
@@ -109,7 +109,7 @@ implementation:
             lr=args.lr,
         )
         
-        print("\n✅ Training completed successfully")
+        print("\\nTraining completed successfully")
         print(f"Checkpoints saved in: {args.output_dir}")
         print(f"Output contains: {os.listdir(args.output_dir)}")
     args:
