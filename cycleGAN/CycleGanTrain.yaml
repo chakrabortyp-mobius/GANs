@@ -4,30 +4,7 @@ inputs:
   - name: dataset_dir
     type: Data
     description: Parent directory containing the extracted horse2zebra dataset.
-  - name: checkpoint_dir
-    type: Data
-    description: Directory with checkpoints (.tar files) for resume training. Leave disconnected or connect to previous training output for resume.
-    optional: true
-  - name: max_batches
-    type: Integer
-    description: Maximum number of batches to train per epoch. Use -1 for full dataset.
-    default: -1
-  - name: epochs
-    type: Integer
-    description: Number of training epochs.
-    default: 1
-  - name: batch_size
-    type: Integer
-    description: Batch size for training.
-    default: 1
-  - name: lr
-    type: Float
-    description: Learning rate for optimizers.
-    default: 0.0001
-outputs:
-  - name: output_dir
-    type: Data
-    description: Directory containing trained model checkpoints (G_H, G_Z, D_H, D_Z).
+
 implementation:
   container:
     image: adityamanjunath/nesyfactory:v9
@@ -45,15 +22,3 @@ implementation:
     args:
       - --dataset_dir
       - {inputPath: dataset_dir}
-      - --checkpoint_dir
-      - {inputPath: checkpoint_dir}
-      - --max_batches
-      - {inputValue: max_batches}
-      - --output_dir
-      - {outputPath: output_dir}
-      - --epochs
-      - {inputValue: epochs}
-      - --batch_size
-      - {inputValue: batch_size}
-      - --lr
-      - {inputValue: lr}
