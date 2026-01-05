@@ -1,21 +1,29 @@
 name: Train CycleGAN
-description: Trains a CycleGAN model with optional resume from previous checkpoints.
+description: Trains a CycleGAN model with optional resume from checkpoints downloaded via CDN.
 inputs:
   - name: dataset_dir
     type: Data
-  - name: checkpoint_dir
-    type: Data
+
+  - name: checkpoint_cdn_url
+    type: String
+    default: "-1"
+
   - name: max_batches
     type: Integer
+
   - name: epochs
     type: Integer
+
   - name: batch_size
     type: Integer
+
   - name: lr
     type: Float
+
 outputs:
   - name: output_dir
     type: Data
+
 implementation:
   container:
     image: adityamanjunath/nesyfactory:v9
@@ -32,56 +40,92 @@ implementation:
         import argparse
         import os
         import importlib
-        
+        import tempfile
+        import urllib.request
+        import zipfile
+        import shutil
 
         train_module = importlib.import_module("nesy_factory.GANs.cycleGAN.train")
         train_cyclegan = train_module.train_cyclegan
-        
+
         parser = argparse.ArgumentParser(description="CycleGAN Trainer")
-        parser.add_argument('--dataset_dir', type=str, required=True)
-        parser.add_argument('--checkpoint_dir', type=str, default="")
-        parser.add_argument('--max_batches', type=int, default=-1)
-        parser.add_argument('--output_dir', type=str, required=True)
-        parser.add_argument('--epochs', type=int, default=1)
-        parser.add_argument('--batch_size', type=int, default=1)
-        parser.add_argument('--lr', type=float, default=0.0001)
-        
+
+        parser.add_argument("--dataset_dir", type=str, required=True)
+        parser.add_argument("--checkpoint_cdn_url", type=str, default="-1")
+        parser.add_argument("--max_batches", type=int, default=-1)
+        parser.add_argument("--output_dir", type=str, required=True)
+        parser.add_argument("--epochs", type=int, default=1)
+        parser.add_argument("--batch_size", type=int, default=1)
+        parser.add_argument("--lr", type=float, default=0.0001)
+
         args = parser.parse_args()
-        
+
         print("Running CycleGAN training")
+        print(f"Dataset dir: {args.dataset_dir}")
+        print(f"Checkpoint CDN URL: {args.checkpoint_cdn_url}")
         print(f"Max batches: {args.max_batches}")
         print(f"Output directory: {args.output_dir}")
         print(f"Epochs: {args.epochs}")
         print(f"Batch size: {args.batch_size}")
         print(f"Learning rate: {args.lr}")
-        
 
         os.makedirs(args.output_dir, exist_ok=True)
-        
 
-        checkpoint_dir_processed = args.checkpoint_dir.strip() if args.checkpoint_dir else ""
-        input_checkpoint_dir = None if not checkpoint_dir_processed else checkpoint_dir_processed
-        
-
+        # Resolve max_batches
         max_batches_value = None if args.max_batches == -1 else args.max_batches
-        
 
-        
-        # Validate checkpoint directory if provided
-        if input_checkpoint_dir:
-            if not os.path.isdir(input_checkpoint_dir):
-                raise ValueError(f"Checkpoint directory does not exist: {input_checkpoint_dir}")
-            
-            # Check for required checkpoint files
-            required_files = ["G_H.pth.tar", "G_Z.pth.tar", "D_H.pth.tar", "D_Z.pth.tar"]
-            missing_files = [f for f in required_files if not os.path.exists(os.path.join(input_checkpoint_dir, f))]
-            
-            if missing_files:
-                print(f"Warning: Missing checkpoint files: {missing_files}")
-                print(f"Available files: {os.listdir(input_checkpoint_dir)}")
-            else:
-                print(f" All checkpoint files found in: {input_checkpoint_dir}")
-        
+        # Resolve checkpoint input directory
+        input_checkpoint_dir = None
+
+        if args.checkpoint_cdn_url and args.checkpoint_cdn_url != "-1":
+            print(f"Downloading checkpoints from CDN: {args.checkpoint_cdn_url}")
+
+            tmp_root = tempfile.mkdtemp(prefix="cyclegan_ckpt_")
+            zip_path = os.path.join(tmp_root, "checkpoints.zip")
+
+            try:
+                urllib.request.urlretrieve(args.checkpoint_cdn_url, zip_path)
+
+                with zipfile.ZipFile(zip_path, "r") as zf:
+                    zf.extractall(tmp_root)
+
+                # Detect checkpoint directory
+                subdirs = [
+                    os.path.join(tmp_root, d)
+                    for d in os.listdir(tmp_root)
+                    if os.path.isdir(os.path.join(tmp_root, d))
+                ]
+
+                input_checkpoint_dir = subdirs[0] if subdirs else tmp_root
+
+                print(f"Checkpoint directory resolved to: {input_checkpoint_dir}")
+
+                # Validate expected files
+                required_files = [
+                    "G_H.pth.tar",
+                    "G_Z.pth.tar",
+                    "D_H.pth.tar",
+                    "D_Z.pth.tar",
+                ]
+
+                missing = [
+                    f for f in required_files
+                    if not os.path.exists(os.path.join(input_checkpoint_dir, f))
+                ]
+
+                if missing:
+                    print(f"Warning: Missing checkpoint files: {missing}")
+                    print(f"Available files: {os.listdir(input_checkpoint_dir)}")
+                else:
+                    print("All required checkpoint files found.")
+
+            except Exception as e:
+                shutil.rmtree(tmp_root, ignore_errors=True)
+                raise RuntimeError(f"Failed to download or extract checkpoints: {e}")
+
+        else:
+            print("No checkpoints provided. Training from scratch.")
+
         # Run training
         train_cyclegan(
             dataset_dir=args.dataset_dir,
@@ -96,15 +140,21 @@ implementation:
     args:
       - --dataset_dir
       - {inputPath: dataset_dir}
-      - --checkpoint_dir
-      - {inputPath: checkpoint_dir}
+
+      - --checkpoint_cdn_url
+      - {inputValue: checkpoint_cdn_url}
+
       - --max_batches
       - {inputValue: max_batches}
+
       - --output_dir
       - {outputPath: output_dir}
+
       - --epochs
       - {inputValue: epochs}
+
       - --batch_size
       - {inputValue: batch_size}
+
       - --lr
       - {inputValue: lr}
