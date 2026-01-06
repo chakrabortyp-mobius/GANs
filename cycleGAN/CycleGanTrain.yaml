@@ -49,7 +49,8 @@ implementation:
         
         subprocess.check_call([
             sys.executable, "-m", "pip", "install",
-            "albumentations", "torchvision"
+            "albumentations==1.4.7",
+            "torchvision==0.17.2"
         ])
 
         train_module = importlib.import_module("nesy_factory.GANs.cycleGAN.train")
