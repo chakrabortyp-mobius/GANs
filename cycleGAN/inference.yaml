@@ -14,7 +14,7 @@ inputs:
     description: Number of random images to sample from each class (trainA and trainB)
 
 outputs:
-  - name: output_zip
+  - name: output_dir
     type: Data
     description: ZIP file containing input images and their generated outputs
 
@@ -228,7 +228,7 @@ implementation:
         parser.add_argument("--checkpoint_dir", type=str, required=True)
         parser.add_argument("--dataset_dir", type=str, required=True)
         parser.add_argument("--num_samples", type=int, default=5)
-        parser.add_argument("--output_zip", type=str, required=True)
+        parser.add_argument("--output_dir", type=str, required=True)
         
         args = parser.parse_args()
         
@@ -238,18 +238,18 @@ implementation:
 
         
         # Create output directory
-        os.makedirs(args.output_zip, exist_ok=True)
+        os.makedirs(args.output_dir, exist_ok=True)
         
         # Run inference
         results_dir = run_inference(
             args.checkpoint_dir,
             args.dataset_dir,
             args.num_samples,
-            args.output_zip
+            args.output_dir
         )
         
         # Create ZIP file
-        zip_path = create_zip(results_dir, args.output_zip)
+        zip_path = create_zip(results_dir, args.output_dir)
         
         print("\\n" + "=========================================")
         print("Inference completed successfully!")
@@ -263,5 +263,5 @@ implementation:
       - {inputPath: dataset_dir}
       - --num_samples
       - {inputValue: num_samples}
-      - --output_zip
-      - {outputPath: output_zip}
+      - --output_dir
+      - {outputPath: output_dir}
