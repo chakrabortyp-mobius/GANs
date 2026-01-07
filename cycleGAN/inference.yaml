@@ -2,11 +2,11 @@ name: CycleGAN Inference
 description: Performs inference on random samples from dataset using trained CycleGAN generators and outputs results as ZIP.
 inputs:
   - name: checkpoint
-    type: Data
+    type: String
     description: Directory containing trained model checkpoints (G_H.pth.tar, G_Z.pth.tar, etc.)
 
   - name: dataset
-    type: Data
+    type: String
     description: Directory containing horse2zebra dataset with trainA and trainB subdirectories
 
   - name: num_samples
