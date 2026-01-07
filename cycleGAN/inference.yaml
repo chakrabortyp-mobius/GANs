@@ -1,8 +1,8 @@
 name: CycleGAN Inference
 description: Runs inference on CycleGAN model to transform horse images to zebra and vice versa, generating sample outputs.
 inputs:
-  - {name: checkpoint_dir, type: Model, description: "Directory containing G_H.pth.tar and G_Z.pth.tar checkpoints"}
-  - {name: dataset_dir, type: Dataset, description: "Directory containing horse2zebra dataset with testA and testB folders"}
+  - {name: checkpoint_dir, type: Data description: "Directory containing G_H.pth.tar and G_Z.pth.tar checkpoints"}
+  - {name: dataset_dir, type: Data, description: "Directory containing horse2zebra dataset with testA and testB folders"}
   - {name: num_samples, type: Integer, default: 5, description: "Number of sample images to process from each domain"}
 outputs:
   - {name: output_dir, type: Model, description: "Directory containing inference results and ZIP archive"}
