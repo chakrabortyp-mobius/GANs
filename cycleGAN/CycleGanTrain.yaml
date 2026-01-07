@@ -2,7 +2,7 @@ name: Train CycleGAN
 description: Trains a CycleGAN model with optional resume from checkpoints downloaded via CDN.
 inputs:
   - name: dataset_dir
-    type: Data
+    type: String
 
   - name: checkpoint_cdn_url
     type: String
@@ -22,7 +22,7 @@ inputs:
 
 outputs:
   - name: output_dir
-    type: Data
+    type: String
 
 implementation:
   container:
