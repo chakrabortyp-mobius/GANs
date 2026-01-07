@@ -8,13 +8,11 @@ outputs:
   - {name: output_dir, type: Model, description: "Directory containing inference results and ZIP archive"}
 implementation:
   container:
-    image: gurpreetgandhi/nesy-factory:v25
+    image: deepak0147/nessy-facotry:0.0.6
     command:
       - sh
       - -c
       - |
-        PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet albumentations==1.4.7 torchvision==0.17.2 "numpy<2.0" || \
-        PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet albumentations==1.4.7 torchvision==0.17.2 "numpy<2.0" --user
         exec "$0" "$@"
       - python3
       - -u
@@ -159,7 +157,7 @@ implementation:
             os.makedirs(zebra_output_dir, exist_ok=True)
             
             # Process horse images (trainA) -> zebra
-            print("\\n=> Processing horse -> zebra transformations...")
+            print("\\n Processing horse -> zebra transformations...")
             for idx, img_path in enumerate(horse_images):
                 print(f"Processing horse image {idx+1}/{len(horse_images)}: {os.path.basename(img_path)}")
                 
