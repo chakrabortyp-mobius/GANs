@@ -1,31 +1,20 @@
 name: CycleGAN Inference
-description: Performs inference on random samples from dataset using trained CycleGAN generators and outputs results as ZIP.
+description: Runs inference on CycleGAN model to transform horse images to zebra and vice versa, generating sample outputs.
 inputs:
-  - name: checkpoint_dir
-    type: Data
-    description: Directory containing trained model checkpoints (G_H.pth.tar, G_Z.pth.tar, etc.)
-
-  - name: dataset_dir
-    type: Data
-    description: Directory containing horse2zebra dataset with trainA and trainB subdirectories
-
-  - name: num_samples
-    type: Integer
-    description: Number of random images to sample from each class (trainA and trainB)
-
+  - {name: checkpoint_dir, type: Model, description: "Directory containing G_H.pth.tar and G_Z.pth.tar checkpoints"}
+  - {name: dataset_dir, type: Dataset, description: "Directory containing horse2zebra dataset with testA and testB folders"}
+  - {name: num_samples, type: Integer, default: 5, description: "Number of sample images to process from each domain"}
 outputs:
-  - name: output_dir
-    type: Data
-    description: ZIP file containing input images and their generated outputs
-
+  - {name: output_dir, type: Model, description: "Directory containing inference results and ZIP archive"}
 implementation:
   container:
-    image: deepak0147/nessy-facotry:0.0.6
+    image: gurpreetgandhi/nesy-factory:v25
     command:
       - sh
       - -c
       - |
-        set -e
+        PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet albumentations==1.4.7 torchvision==0.17.2 "numpy<2.0" || \
+        PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet albumentations==1.4.7 torchvision==0.17.2 "numpy<2.0" --user
         exec "$0" "$@"
       - python3
       - -u
