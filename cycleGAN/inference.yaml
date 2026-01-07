@@ -61,18 +61,18 @@ implementation:
         Generator = generator_module.Generator
         transforms = config_module.transforms
 
-        def load_generators(checkpoint_dir, device="cpu"):
-            print(f"Loading generators from: {checkpoint}")
+        def load_generators(checkpoint_path, device="cpu"):
+            print(f"Loading generators from: {checkpoint_path}")
             device = torch.device(device)
             
             G_H = Generator().to(device)
             G_Z = Generator().to(device)
             
-            g_h_path = os.path.join(checkpoint_dir, "G_H.pth.tar")
-            g_z_path = os.path.join(checkpoint_dir, "G_Z.pth.tar")
+            g_h_path = os.path.join(checkpoint_path, "G_H.pth.tar")
+            g_z_path = os.path.join(checkpoint_path, "G_Z.pth.tar")
             
             if not os.path.exists(g_h_path) or not os.path.exists(g_z_path):
-                raise FileNotFoundError(f"Generator checkpoints not found in {checkpoint}")
+                raise FileNotFoundError(f"Generator checkpoints not found in {checkpoint_path}")
             
             g_h_ckpt = torch.load(g_h_path, map_location=device)
             g_z_ckpt = torch.load(g_z_path, map_location=device)
@@ -110,14 +110,14 @@ implementation:
             num_to_sample = min(num_samples, len(all_images))
             return random.sample(all_images, num_to_sample)
 
-        def find_dataset_root(dataset):
-            # Check if dataset_dir itself contains trainA and trainB
-            if os.path.exists(os.path.join(dataset, "testA")) and \
-               os.path.exists(os.path.join(dataset, "testB")):
-                return dataset
+        def find_dataset_root(dataset_path):
+            # Check if dataset_dir itself contains testA and testB
+            if os.path.exists(os.path.join(dataset_path, "testA")) and \
+               os.path.exists(os.path.join(dataset_path, "testB")):
+                return dataset_path
             
             # Look for horse2zebra subdirectory
-            h2z_path = os.path.join(dataset, "horse2zebra")
+            h2z_path = os.path.join(dataset_path, "horse2zebra")
             if os.path.exists(h2z_path):
                 if os.path.exists(os.path.join(h2z_path, "testA")) and \
                    os.path.exists(os.path.join(h2z_path, "testB")):
@@ -128,19 +128,17 @@ implementation:
                 if os.path.exists(nested_h2z):
                     return nested_h2z
             
-            raise FileNotFoundError(f"Could not find trainA and trainB directories in {dataset}")
+            raise FileNotFoundError(f"Could not find testA and testB directories in {dataset_path}")
 
-        def run_inference(checkpoint, dataset, num_samples, output):
-            
+        def run_inference(checkpoint_path, dataset_path, num_samples, output_path):
             device = "cuda" if torch.cuda.is_available() else "cpu"
             print(f"Using device: {device}")
             
             # Load generators
-            G_H, G_Z = load_generators(checkpoint_dir, device)
+            G_H, G_Z = load_generators(checkpoint_path, device)
             
             # Find dataset root
-            dataset_root = find_dataset_root(dataset)
-            
+            dataset_root = find_dataset_root(dataset_path)
             
             # Get directories
             testA_dir = os.path.join(dataset_root, "testA")
@@ -156,20 +154,20 @@ implementation:
             print(f"Found {len(zebra_images)} zebra images")
             
             # Create output directories
-            results = os.path.join(output, "inference_results")
-            os.makedirs(results, exist_ok=True)
+            results_dir = os.path.join(output_path, "inference_results")
+            os.makedirs(results_dir, exist_ok=True)
             
-            horse_input_dir = os.path.join(results, "horse_inputs")
-            horse_output_dir = os.path.join(results, "horse_to_zebra_outputs")
-            zebra_input_dir = os.path.join(results, "zebra_inputs")
-            zebra_output_dir = os.path.join(results, "zebra_to_horse_outputs")
+            horse_input_dir = os.path.join(results_dir, "horse_inputs")
+            horse_output_dir = os.path.join(results_dir, "horse_to_zebra_outputs")
+            zebra_input_dir = os.path.join(results_dir, "zebra_inputs")
+            zebra_output_dir = os.path.join(results_dir, "zebra_to_horse_outputs")
             
             os.makedirs(horse_input_dir, exist_ok=True)
             os.makedirs(horse_output_dir, exist_ok=True)
             os.makedirs(zebra_input_dir, exist_ok=True)
             os.makedirs(zebra_output_dir, exist_ok=True)
             
-            # Process horse images (trainA) -> zebra
+            # Process horse images (testA) -> zebra
             print("\\n=> Processing horse -> zebra transformations...")
             for idx, img_path in enumerate(horse_images):
                 print(f"Processing horse image {idx+1}/{len(horse_images)}: {os.path.basename(img_path)}")
@@ -181,13 +179,13 @@ implementation:
                 # Run inference
                 img_tensor = preprocess_image(img_path).to(device)
                 with torch.no_grad():
-                    output = G_H(img_tensor)
+                    output_tensor = G_H(img_tensor)
                 
                 # Save output
                 output_filename = f"horse_{idx+1}_to_zebra.png"
-                save_image(output, os.path.join(horse_output_dir, output_filename))
+                save_image(output_tensor, os.path.join(horse_output_dir, output_filename))
             
-            # Process zebra images (trainB) -> horse
+            # Process zebra images (testB) -> horse
             print("\\n=> Processing zebra -> horse transformations...")
             for idx, img_path in enumerate(zebra_images):
                 print(f"Processing zebra image {idx+1}/{len(zebra_images)}: {os.path.basename(img_path)}")
@@ -199,25 +197,25 @@ implementation:
                 # Run inference
                 img_tensor = preprocess_image(img_path).to(device)
                 with torch.no_grad():
-                    output = G_Z(img_tensor)
+                    output_tensor = G_Z(img_tensor)
                 
                 # Save output
                 output_filename = f"zebra_{idx+1}_to_horse.png"
-                save_image(output, os.path.join(zebra_output_dir, output_filename))
+                save_image(output_tensor, os.path.join(zebra_output_dir, output_filename))
             
             print("\\n=> Inference completed successfully!")
             return results_dir
 
-        def create_zip(source, output):
-            
-            zip_path = os.path.join(output, "cyclegan_inference_results.zip")
+        def create_zip(source_dir, output_path):
+            zip_filename = "cyclegan_inference_results.zip"
+            zip_path = os.path.join(output_path, zip_filename)
             print(f"\\n=> Creating ZIP archive: {zip_path}")
             
             with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                for root, dirs, files in os.walk(source):
+                for root, dirs, files in os.walk(source_dir):
                     for file in files:
                         file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, os.path.dirname(source))
+                        arcname = os.path.relpath(file_path, os.path.dirname(source_dir))
                         zipf.write(file_path, arcname)
             
             print(f"=> ZIP archive created successfully")
@@ -234,8 +232,12 @@ implementation:
         
         print("======================================")
         print("CycleGAN Inference Component")
-        print("==========================================")
-
+        print("======================================")
+        
+        print(f"Checkpoint path: {args.checkpoint}")
+        print(f"Dataset path: {args.dataset}")
+        print(f"Num samples: {args.num_samples}")
+        print(f"Output path: {args.output}")
         
         # Create output directory
         os.makedirs(args.output, exist_ok=True)
@@ -249,18 +251,18 @@ implementation:
         )
         
         # Create ZIP file
-        zip_path = create_zip(results, args.output)
+        zip_path = create_zip(results_dir, args.output)
         
         print("\\n" + "=========================================")
         print("Inference completed successfully!")
         print(f"Results saved to: {zip_path}")
-        print("=================================")
+        print("=========================================")
 
     args:
       - --checkpoint
-      - {inputPath: checkpoint}
+      - {inputValue: checkpoint}
       - --dataset
-      - {inputPath: dataset}
+      - {inputValue: dataset}
       - --num_samples
       - {inputValue: num_samples}
       - --output
