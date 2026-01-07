@@ -6,7 +6,7 @@ inputs:
     description: URL to fetch the ZIP dataset from.
 outputs:
   - name: dataset_dir
-    type: Data
+    type: String
     description: "Parent directory containing extracted dataset."
 implementation:
   container:
